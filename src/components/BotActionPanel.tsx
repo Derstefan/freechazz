@@ -13,6 +13,16 @@ const ACTION_ICONS: Record<BotActionType, string> = {
   [BotActionType.DEFEND_KING]: '\u{1F451}',     // crown
 };
 
+const ACTION_TOOLTIPS: Record<BotActionType, string> = {
+  [BotActionType.RUSH_50]: '50% of pieces rush toward the enemy king, ignoring threats.',
+  [BotActionType.ADVANCE_SAFE_20]: '30% of pieces advance toward the enemy king, avoiding threatened squares.',
+  [BotActionType.ATTACK]: 'Attack enemy pieces that cannot be recaptured safely.',
+  [BotActionType.FORMATION]: 'Move pieces to cover currently unprotected friendly pieces.',
+  [BotActionType.COVER]: 'Position backup pieces to protect threatened frontline pieces.',
+  [BotActionType.EVADE]: 'Move threatened pieces to safe squares.',
+  [BotActionType.DEFEND_KING]: 'Move pieces closer to the king and cover threatened squares around him.',
+};
+
 export default function BotActionPanel() {
   const computedActions = useGameStore((s) => s.computedActions);
   const botThinking = useGameStore((s) => s.botThinking);
@@ -37,6 +47,7 @@ export default function BotActionPanel() {
           onMouseEnter={() => action.moves.length > 0 && setHoveredAction(action)}
           onMouseLeave={() => setHoveredAction(null)}
           disabled={disabled || action.moves.length === 0}
+          title={ACTION_TOOLTIPS[action.type]}
           className={`flex items-center gap-2 px-3 py-2 rounded text-sm font-medium transition-colors text-left
             ${action.moves.length === 0
               ? 'bg-gray-800 text-gray-600 cursor-not-allowed'

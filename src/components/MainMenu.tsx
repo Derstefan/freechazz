@@ -206,6 +206,20 @@ export default function MainMenu() {
         >
           Start Game
         </button>
+
+        {/* Footer */}
+        <div className="mt-8 pt-4 border-t border-gray-800 text-center text-xs text-gray-500 space-y-1">
+          <p>I am very happy to receive feedback, ideas, and comments &lt;3.</p>
+          <p>
+            <a href="mailto:info@wandering-mind.de" className="text-gray-400 hover:text-white transition-colors">
+              info@wandering-mind.de
+            </a>
+            {' | '}
+            <a href="https://wandering-mind.de" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+              wandering-mind.de
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

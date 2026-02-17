@@ -157,7 +157,7 @@ function computeRush50(
 }
 
 // ---------------------------------------------------------------
-// Advance Safe 20% — 20% of pieces advance safely toward enemy king
+// Advance Safe 30% — 30% of pieces advance safely toward enemy king
 // ---------------------------------------------------------------
 
 function computeAdvanceSafe20(
@@ -185,7 +185,7 @@ function computeAdvanceSafe20(
   }
 
   shuffle(candidates, rand);
-  const count = Math.ceil(candidates.length * 0.2);
+  const count = Math.ceil(candidates.length * 0.3);
   const selected = candidates.slice(0, count);
 
   const moves: BotActionMove[] = [];
@@ -196,7 +196,7 @@ function computeAdvanceSafe20(
 
   return {
     type: BotActionType.ADVANCE_SAFE_20,
-    label: 'Advance Safe 20%',
+    label: 'Scout',
     pieceCount: moves.length,
     moves,
   };

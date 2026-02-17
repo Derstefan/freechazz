@@ -602,14 +602,12 @@ export default function GameCanvas() {
         }
       }
 
-      // Uniform base color so highlights look the same on light/dark squares
-      const HIGHLIGHT_BASE = '#d0ae8b';
-
+      // Semi-transparent base to normalize light/dark squares without hiding pieces
       // Helper: paint a uniform-base highlight on a cell
       const highlightCell = (cx: number, cy: number, r: number, g: number, b: number, a: number) => {
         const px = offsetX + cx * cellSize;
         const py = offsetY + cy * cellSize;
-        ctx.fillStyle = HIGHLIGHT_BASE;
+        ctx.fillStyle = 'rgba(208, 174, 139, 0.45)';
         ctx.fillRect(px, py, cellSize, cellSize);
         ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
         ctx.fillRect(px, py, cellSize, cellSize);
