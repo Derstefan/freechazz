@@ -602,40 +602,40 @@ export default function GameCanvas() {
         }
       }
 
+      // Uniform base color so highlights look the same on light/dark squares
+      const HIGHLIGHT_BASE = '#d0ae8b';
+
+      // Helper: paint a uniform-base highlight on a cell
+      const highlightCell = (cx: number, cy: number, r: number, g: number, b: number, a: number) => {
+        const px = offsetX + cx * cellSize;
+        const py = offsetY + cy * cellSize;
+        ctx.fillStyle = HIGHLIGHT_BASE;
+        ctx.fillRect(px, py, cellSize, cellSize);
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
+        ctx.fillRect(px, py, cellSize, cellSize);
+      };
+
       // Color overlay on target cells
       const isAttack = hoveredAction.type === BotActionType.ATTACK;
-      ctx.fillStyle = isAttack
-        ? 'rgba(220, 50, 50, 0.30)'
-        : 'rgba(50, 200, 50, 0.30)';
       for (const move of hoveredAction.moves) {
-        ctx.fillRect(
-          offsetX + move.toX * cellSize,
-          offsetY + move.toY * cellSize,
-          cellSize, cellSize,
-        );
+        if (isAttack) {
+          highlightCell(move.toX, move.toY, 220, 50, 50, 0.30);
+        } else {
+          highlightCell(move.toX, move.toY, 50, 200, 50, 0.30);
+        }
       }
 
       // Red overlay on enemy cells
       if (hoveredAction.enemyCells && hoveredAction.enemyCells.length > 0) {
-        ctx.fillStyle = 'rgba(220, 50, 50, 0.30)';
         for (const ec of hoveredAction.enemyCells) {
-          ctx.fillRect(
-            offsetX + ec.x * cellSize,
-            offsetY + ec.y * cellSize,
-            cellSize, cellSize,
-          );
+          highlightCell(ec.x, ec.y, 220, 50, 50, 0.30);
         }
       }
 
       // Green overlay on protected cells
       if (hoveredAction.protectedCells && hoveredAction.protectedCells.length > 0) {
-        ctx.fillStyle = 'rgba(50, 200, 50, 0.30)';
         for (const pc of hoveredAction.protectedCells) {
-          ctx.fillRect(
-            offsetX + pc.x * cellSize,
-            offsetY + pc.y * cellSize,
-            cellSize, cellSize,
-          );
+          highlightCell(pc.x, pc.y, 50, 200, 50, 0.30);
         }
       }
 

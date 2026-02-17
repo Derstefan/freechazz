@@ -236,11 +236,23 @@ function computeAttack(
     }
   }
 
+  // Count unique target positions = actual enemy pieces that will be destroyed
+  const uniqueTargets = new Set<number>();
+  const enemyCells: { x: number; y: number }[] = [];
+  for (const move of moves) {
+    const key = move.toY * width + move.toX;
+    if (!uniqueTargets.has(key)) {
+      uniqueTargets.add(key);
+      enemyCells.push({ x: move.toX, y: move.toY });
+    }
+  }
+
   return {
     type: BotActionType.ATTACK,
     label: 'Attack',
-    pieceCount: moves.length,
+    pieceCount: uniqueTargets.size,
     moves,
+    enemyCells,
   };
 }
 
@@ -563,15 +575,15 @@ function computeEvade(
 }
 
 // ---------------------------------------------------------------
-// Defend the King — cover the squares around the own king so that
-// attackers can be recaptured immediately.
+// Defend the King — two-phase defence:
 //
-// 1. Build a "king zone" (Manhattan dist ≤ 2 around king).
-// 2. Find which zone squares are already covered by friendly
-//    pieces' possible moves.
-// 3. Greedily assign the closest pieces to cover uncovered zone
-//    squares (via actionMap from the new position).
-// 4. Limit: max(5, 10% of pieces).
+// Phase A  "Intercept": move pieces INTO threatened king-zone
+//          squares so they can block or trade with attackers.
+// Phase B  "Reinforce": move additional pieces closer to the king
+//          (reducing Manhattan distance), preferring safe squares.
+//
+// King zone = Manhattan dist ≤ 3.
+// Limit: max(8, 20% of pieces).
 // ---------------------------------------------------------------
 
 function computeDefendKing(
@@ -590,12 +602,13 @@ function computeDefendKing(
   const height = state.height;
   const topDown = player === PieceType.TOPDOWN_PLAYER;
   const pieces = state.getAllPiecesFrom(player);
+  const limit = Math.max(8, Math.ceil(pieces.length * 0.2));
 
-  // King zone: all in-bounds squares within Manhattan distance 2
+  // King zone: all in-bounds squares within Manhattan distance 3
   const kingZone = new Set<number>();
-  for (let dy = -2; dy <= 2; dy++) {
-    for (let dx = -2; dx <= 2; dx++) {
-      if (Math.abs(dx) + Math.abs(dy) > 2) continue;
+  for (let dy = -3; dy <= 3; dy++) {
+    for (let dx = -3; dx <= 3; dx++) {
+      if (Math.abs(dx) + Math.abs(dy) > 3) continue;
       if (dx === 0 && dy === 0) continue;
       const nx = kx + dx;
       const ny = ky + dy;
@@ -605,82 +618,137 @@ function computeDefendKing(
     }
   }
 
-  // Which zone squares are already covered by any friendly piece's moves?
-  const coveredZone = new Set<number>();
+  // Threatened zone squares (enemy can reach them)
+  const threatenedZone = new Set<number>();
+  for (const k of kingZone) {
+    if (enemyThreatMap.has(k)) threatenedZone.add(k);
+  }
+
+  // Which zone squares are already occupied by a friendly piece?
+  const friendlyOccupied = new Set<number>();
   for (const piece of pieces) {
-    for (const m of piece.moveSet.getPossibleMoves()) {
-      const key = m.y * width + m.x;
-      if (kingZone.has(key)) {
-        coveredZone.add(key);
+    friendlyOccupied.add(piece.pos.y * width + piece.pos.x);
+  }
+
+  const moves: BotActionMove[] = [];
+  const usedPieces = new Set<number>(); // piece IDs already assigned
+
+  // --- Phase A: Intercept — move pieces that can cover threatened zone squares ---
+  // "Cover" = from the new position, the piece's actionMap can reach
+  // a threatened zone square (so it can counter-attack).
+  const uncoveredThreats = new Set(threatenedZone);
+
+  // Which threatened squares are already covered by friendly pieces' actionMaps?
+  for (const piece of pieces) {
+    const actionKeys = piece.pieceType.actionMap.keySet();
+    for (const ak of actionKeys) {
+      let adx = ak.x;
+      let ady = ak.y;
+      if (topDown) ady = -ady;
+      const reachKey = (piece.pos.y + ady) * width + (piece.pos.x + adx);
+      uncoveredThreats.delete(reachKey);
+    }
+  }
+
+  if (uncoveredThreats.size > 0) {
+    type InterceptCandidate = { piece: Piece; move: ActionPos; coveredKeys: number[]; dist: number };
+    const interceptCandidates: InterceptCandidate[] = [];
+
+    for (const piece of pieces) {
+      if (piece === ownKing) continue;
+      const dist = Math.abs(piece.pos.x - kx) + Math.abs(piece.pos.y - ky);
+      const actionKeys = piece.pieceType.actionMap.keySet();
+
+      let bestMove: ActionPos | null = null;
+      let bestKeys: number[] = [];
+
+      for (const m of piece.moveSet.getPossibleMoves()) {
+        const covered: number[] = [];
+        for (const ak of actionKeys) {
+          let adx = ak.x;
+          let ady = ak.y;
+          if (topDown) ady = -ady;
+          const reachKey = (m.y + ady) * width + (m.x + adx);
+          if (uncoveredThreats.has(reachKey)) {
+            covered.push(reachKey);
+          }
+        }
+        if (covered.length > bestKeys.length) {
+          bestMove = m;
+          bestKeys = covered;
+        }
+      }
+
+      if (bestMove && bestKeys.length > 0) {
+        interceptCandidates.push({ piece, move: bestMove, coveredKeys: bestKeys, dist });
+      }
+    }
+
+    // Sort: most covered first, then closest to king
+    interceptCandidates.sort((a, b) =>
+      b.coveredKeys.length - a.coveredKeys.length || a.dist - b.dist,
+    );
+
+    for (const cand of interceptCandidates) {
+      if (moves.length >= limit) break;
+      if (uncoveredThreats.size === 0) break;
+
+      const newKeys = cand.coveredKeys.filter(k => uncoveredThreats.has(k));
+      if (newKeys.length === 0) continue;
+
+      moves.push(toMove(cand.piece, cand.move));
+      usedPieces.add(cand.piece.id);
+      for (const k of newKeys) {
+        uncoveredThreats.delete(k);
       }
     }
   }
 
-  // Uncovered zone squares that need defenders
-  const uncovered = new Set<number>();
-  for (const k of kingZone) {
-    if (!coveredZone.has(k)) uncovered.add(k);
-  }
-
-  if (uncovered.size === 0) {
-    return { type: BotActionType.DEFEND_KING, label: 'Defend King', pieceCount: 0, moves: [] };
-  }
-
-  // For each non-king piece, find the best move that covers the most
-  // uncovered zone squares via its actionMap from the new position.
-  type Candidate = { piece: Piece; move: ActionPos; coveredKeys: number[]; dist: number };
-  const candidates: Candidate[] = [];
+  // --- Phase B: Reinforce — move additional pieces closer to the king ---
+  // Pick moves that reduce Manhattan distance, preferring safe squares.
+  type ReinforceCandidate = { piece: Piece; move: ActionPos; newDist: number; safe: boolean };
+  const reinforceCandidates: ReinforceCandidate[] = [];
 
   for (const piece of pieces) {
     if (piece === ownKing) continue;
-    const dist = Math.abs(piece.pos.x - kx) + Math.abs(piece.pos.y - ky);
-    const actionKeys = piece.pieceType.actionMap.keySet();
+    if (usedPieces.has(piece.id)) continue;
+    const currentDist = Math.abs(piece.pos.x - kx) + Math.abs(piece.pos.y - ky);
+    // Only reinforce pieces not already adjacent to king
+    if (currentDist <= 1) continue;
 
     let bestMove: ActionPos | null = null;
-    let bestKeys: number[] = [];
+    let bestNewDist = currentDist;
+    let bestSafe = false;
 
     for (const m of piece.moveSet.getPossibleMoves()) {
-      const covered: number[] = [];
-      for (const ak of actionKeys) {
-        let adx = ak.x;
-        let ady = ak.y;
-        if (topDown) ady = -ady;
-        const reachKey = (m.y + ady) * width + (m.x + adx);
-        if (uncovered.has(reachKey)) {
-          covered.push(reachKey);
-        }
-      }
-      if (covered.length > bestKeys.length) {
+      const nd = Math.abs(m.x - kx) + Math.abs(m.y - ky);
+      if (nd >= currentDist) continue; // must get closer
+      const safe = !enemyThreatMap.has(m.y * width + m.x);
+      // Prefer safe squares, then closest to king
+      if (!bestMove
+        || (safe && !bestSafe)
+        || (safe === bestSafe && nd < bestNewDist)) {
         bestMove = m;
-        bestKeys = covered;
+        bestNewDist = nd;
+        bestSafe = safe;
       }
     }
 
-    if (bestMove && bestKeys.length > 0) {
-      candidates.push({ piece, move: bestMove, coveredKeys: bestKeys, dist });
+    if (bestMove) {
+      reinforceCandidates.push({ piece, move: bestMove, newDist: bestNewDist, safe: bestSafe });
     }
   }
 
-  // Sort closest to king first
-  candidates.sort((a, b) => a.dist - b.dist);
+  // Sort: safe first, then by new distance (closest to king first)
+  reinforceCandidates.sort((a, b) => {
+    if (a.safe !== b.safe) return a.safe ? -1 : 1;
+    return a.newDist - b.newDist;
+  });
 
-  const limit = Math.max(5, Math.ceil(pieces.length * 0.1));
-  const moves: BotActionMove[] = [];
-  const nowCovered = new Set<number>();
-
-  for (const cand of candidates) {
+  for (const cand of reinforceCandidates) {
     if (moves.length >= limit) break;
-    if (uncovered.size === 0) break;
-
-    // Only pick this piece if it covers at least one still-uncovered square
-    const newKeys = cand.coveredKeys.filter(k => uncovered.has(k));
-    if (newKeys.length === 0) continue;
-
     moves.push(toMove(cand.piece, cand.move));
-    for (const k of newKeys) {
-      uncovered.delete(k);
-      nowCovered.add(k);
-    }
+    usedPieces.add(cand.piece.id);
   }
 
   return {
