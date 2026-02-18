@@ -65,16 +65,24 @@ export default function MainMenu() {
               <button
                 key={m.value}
                 onClick={() => setConfig({ mode: m.value })}
-                className={`py-2 px-4 rounded font-medium text-sm transition-colors ${
-                  config.mode === m.value
+                className={`py-2 px-4 rounded font-medium text-sm transition-colors ${config.mode === m.value
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
+                  }`}
               >
                 {m.label}
               </button>
             ))}
           </div>
+          <label className="flex items-center gap-2 text-sm text-gray-300 mt-3">
+            <input
+              type="checkbox"
+              checked={config.botActions}
+              onChange={(e) => setConfig({ botActions: e.target.checked })}
+              className="rounded"
+            />
+            Fight with Bot Actions
+          </label>
         </div>
 
         {/* Board Size */}
@@ -85,11 +93,10 @@ export default function MainMenu() {
               <button
                 key={s.value}
                 onClick={() => setConfig({ sizeName: s.value })}
-                className={`py-2 px-4 rounded font-medium text-sm transition-colors ${
-                  config.sizeName === s.value
+                className={`py-2 px-4 rounded font-medium text-sm transition-colors ${config.sizeName === s.value
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
+                  }`}
               >
                 {s.label}
               </button>
@@ -108,11 +115,10 @@ export default function MainMenu() {
                 <button
                   key={s.value}
                   onClick={() => setConfig({ sizeName: s.value })}
-                  className={`py-2 px-4 rounded font-medium text-sm transition-colors ${
-                    config.sizeName === s.value
+                  className={`py-2 px-4 rounded font-medium text-sm transition-colors ${config.sizeName === s.value
                       ? 'bg-amber-600 text-white'
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
+                    }`}
                 >
                   {s.label}
                 </button>
@@ -132,11 +138,10 @@ export default function MainMenu() {
                 <button
                   key={d}
                   onClick={() => setConfig({ botDepth: d })}
-                  className={`py-2 px-3 rounded font-medium text-sm transition-colors ${
-                    config.botDepth === d
+                  className={`py-2 px-3 rounded font-medium text-sm transition-colors ${config.botDepth === d
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
+                    }`}
                 >
                   {d}
                 </button>
@@ -165,16 +170,6 @@ export default function MainMenu() {
                 className="rounded"
               />
               Same Pieces for both players
-            </label>
-
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input
-                type="checkbox"
-                checked={config.botActions}
-                onChange={(e) => setConfig({ botActions: e.target.checked })}
-                className="rounded"
-              />
-              Fight with Bot Actions
             </label>
 
             <label className="flex items-center gap-2 text-sm text-gray-300">
@@ -209,7 +204,7 @@ export default function MainMenu() {
 
         {/* Footer */}
         <div className="mt-8 pt-4 border-t border-gray-800 text-center text-xs text-gray-500 space-y-1">
-          <p>I am very happy to receive feedback, ideas, and comments &lt;3.</p>
+          <p>I am very happy to receive feedback, ideas, and comments &lt;3</p>
           <p>
             <a href="mailto:info@wandering-mind.de" className="text-gray-400 hover:text-white transition-colors">
               info@wandering-mind.de

@@ -31,7 +31,7 @@ export function computeBotActions(
 
   const rawActions = [
     computeRush50(state, player, rand, width, enemyKing),
-    computeAdvanceSafe20(state, player, rand, enemyThreatMap, width, enemyKing),
+    computeSafeForward(state, player, rand, enemyThreatMap, width, enemyKing),
     computeAttack(state, player, enemy, enemyThreatMap, width),
     computeFormation(state, player, width),
     computeCover(state, player, enemy, enemyThreatMap, width),
@@ -157,10 +157,11 @@ function computeRush50(
 }
 
 // ---------------------------------------------------------------
-// Advance Safe 30% — 30% of pieces advance safely toward enemy king
+// Safe Forward — 30% of pieces advance toward enemy king,
+// only to squares not threatened by any enemy piece.
 // ---------------------------------------------------------------
 
-function computeAdvanceSafe20(
+function computeSafeForward(
   state: GameOperator,
   player: EPlayer,
   rand: SeededRandom,
@@ -195,8 +196,8 @@ function computeAdvanceSafe20(
   }
 
   return {
-    type: BotActionType.ADVANCE_SAFE_20,
-    label: 'Scout',
+    type: BotActionType.SAFE_FORWARD,
+    label: 'Safe Forward',
     pieceCount: moves.length,
     moves,
   };

@@ -5,7 +5,7 @@ import { BotActionType, type BotActionInfo } from '../engine/botactions/BotActio
 
 const ACTION_ICONS: Record<BotActionType, string> = {
   [BotActionType.RUSH_50]: '\u{2694}',          // crossed swords
-  [BotActionType.ADVANCE_SAFE_20]: '\u{1F9ED}', // compass
+  [BotActionType.SAFE_FORWARD]: '\u{1F9ED}', // compass
   [BotActionType.ATTACK]: '\u{1F3AF}',          // bullseye
   [BotActionType.FORMATION]: '\u{1F3F0}',       // castle
   [BotActionType.COVER]: '\u{1F6E1}',           // shield
@@ -15,7 +15,7 @@ const ACTION_ICONS: Record<BotActionType, string> = {
 
 const ACTION_TOOLTIPS: Record<BotActionType, string> = {
   [BotActionType.RUSH_50]: '50% of pieces rush toward the enemy king, ignoring threats.',
-  [BotActionType.ADVANCE_SAFE_20]: '30% of pieces advance toward the enemy king, avoiding threatened squares.',
+  [BotActionType.SAFE_FORWARD]: '30% of pieces advance toward the enemy king, only to squares the enemy cannot reach.',
   [BotActionType.ATTACK]: 'Attack enemy pieces that cannot be recaptured safely.',
   [BotActionType.FORMATION]: 'Move pieces to cover currently unprotected friendly pieces.',
   [BotActionType.COVER]: 'Position backup pieces to protect threatened frontline pieces.',
